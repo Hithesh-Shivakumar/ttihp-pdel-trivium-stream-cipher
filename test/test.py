@@ -3,65 +3,93 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
+from cocotb.triggers import RisingEdge
 
+# ──────── EDIT THIS ────────
+SEED = 0xBB            # any 8-bit value you choose
+DATA = [0xDE, 0xAD, 0xBE, 0xEF]
+# ───────────────────────────
+
+CMD_NORMAL = 0x00
+CMD_RESET  = 0xFF
 
 @cocotb.test()
 async def tt_um_trivium_stream_processor(dut):
-    """Trivium-lite stream processor interface activity test"""
+    """Round-trip test matching tb.v timing, works for any SEED—even if SEED==DATA[0]"""
 
-    dut._log.info("Starting Trivium-lite stream processor test")
+    log = dut._log
+    log.info(f"Starting Trivium round-trip with SEED=0x{SEED:02X}")
 
-    # Clock period is 20 ns (50 MHz)
-    clock = Clock(dut.clk, 20, units="ns")
-    cocotb.start_soon(clock.start())
+    # start 50 MHz clock
+    cocotb.start_soon(Clock(dut.clk, 20, units="ns").start())
 
-    # Basic init
-    dut.ena.value = 1
-    dut.ui_in.value = 0x00
-    dut.uio_in.value = 0x00
-    dut.rst_n.value = 0
+    # apply reset: low for 3 cycles
+    dut.ena.value    = 1
+    dut.ui_in.value  = 0
+    dut.uio_in.value = CMD_NORMAL
+    dut.rst_n.value  = 0
+    for _ in range(3):
+        await RisingEdge(dut.clk)
 
-    # Reset pulse
-    dut._log.info("Applying reset")
-    await ClockCycles(dut.clk, 3)
+    # release reset, wait one more cycle
     dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 2)
+    await RisingEdge(dut.clk)
 
-    # Send seed
-    dut._log.info("Sending seed")
-    dut.uio_in.value = 0x76
-    await ClockCycles(dut.clk, 1)
-    dut.uio_in.value = 0x00
-    await ClockCycles(dut.clk, 1)
+    # ───── seed phase ─────
+    log.info(f"Seeding with 0x{SEED:02X}")
+    dut.uio_in.value = SEED
+    await RisingEdge(dut.clk)
+    dut.uio_in.value = CMD_NORMAL
+    await RisingEdge(dut.clk)
 
-    # First pass
-    dut._log.info("Starting first pass")
-    for i in range(4):
-        dut.ui_in.value = i
-        await ClockCycles(dut.clk, 8)
-        dut._log.info(f"Cycle {i} completed")
+    # ─── First Processing Phase ───
+    log.info("=== First Processing Phase ===")
+    intermediate = []
+    for i, val in enumerate(DATA):
+        dut.ui_in.value = val
+        # wait exactly 8 rising edges
+        for _ in range(8):
+            await RisingEdge(dut.clk)
+        out = dut.uo_out.value.integer
+        intermediate.append(out)
+        log.info(f"Input[{i}] = 0x{val:02X} → 0x{out:02X}")
 
-    # Reset again
-    dut._log.info("Resetting internal state")
-    dut.uio_in.value = 0xFF
-    await ClockCycles(dut.clk, 1)
-    dut.uio_in.value = 0x00
-    await ClockCycles(dut.clk, 2)
+    # ─── Reset internal state ───
+    log.info("Resetting internal state (0xFF)")
+    dut.uio_in.value = CMD_RESET
+    await RisingEdge(dut.clk)
+    dut.uio_in.value = CMD_NORMAL
+    # wait two cycles to clear
+    await RisingEdge(dut.clk)
+    await RisingEdge(dut.clk)
 
-    # Same seed
-    dut._log.info("Reapplying seed")
-    dut.uio_in.value = 0x76
-    await ClockCycles(dut.clk, 1)
-    dut.uio_in.value = 0x00
-    await ClockCycles(dut.clk, 1)
+    # ─── Reseed ───
+    log.info(f"Re-seeding with 0x{SEED:02X}")
+    dut.uio_in.value = SEED
+    await RisingEdge(dut.clk)
+    dut.uio_in.value = CMD_NORMAL
+    await RisingEdge(dut.clk)
 
-    # Second pass
-    dut._log.info("Starting second pass")
-    for i in range(4):
-        dut.ui_in.value = i + 10
-        await ClockCycles(dut.clk, 8)
-        dut._log.info(f"Cycle {i} completed")
+    # ─── Second Processing Phase ───
+    log.info("=== Second Processing Phase ===")
+    final = []
+    for i, val in enumerate(intermediate):
+        dut.ui_in.value = val
+        for _ in range(8):
+            await RisingEdge(dut.clk)
+        out = dut.uo_out.value.integer
+        final.append(out)
+        log.info(f"Input[{i}] = 0x{val:02X} → 0x{out:02X}")
 
-    # Done
-    dut._log.info("Test completed successfully")
+    # ─── Check Results ───
+    log.info("=== Test Result ===")
+    ok = True
+    for i, orig in enumerate(DATA):
+        if final[i] == orig:
+            log.info(f"PASS [{i}] 0x{orig:02X} → 0x{intermediate[i]:02X} → 0x{final[i]:02X}")
+        else:
+            log.error(f"FAIL [{i}] 0x{orig:02X} → 0x{intermediate[i]:02X} → 0x{final[i]:02X}")
+            ok = False
+
+    assert ok, f"Round-trip mismatch for seed=0x{SEED:02X}"
+    log.info("All vectors passed")
