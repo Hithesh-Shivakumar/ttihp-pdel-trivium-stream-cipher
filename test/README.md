@@ -13,15 +13,14 @@ See below to get started or for more information, check the [website](https://ti
 To run the RTL simulation:
 
 ```sh
-make -B
+make verilog
 ```
+## How to cocotb:
 
-To run gatelevel simulation, first harden your project and copy `../runs/wokwi/results/final/verilog/gl/{your_module_name}.v` to `gate_level_netlist.v`.
-
-Then run:
+Create a virtual environment, acrivate it and inside virtual environmrnt run:
 
 ```sh
-make -B GATES=yes
+make
 ```
 
 ## How to view the VCD file
