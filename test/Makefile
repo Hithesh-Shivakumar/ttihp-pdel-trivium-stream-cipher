@@ -42,3 +42,10 @@ MODULE = test
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
+
+
+
+verilog:
+	iverilog -g2012 -o sim_build/verilog_tb.vvp $(COMPILE_ARGS) $(VERILOG_SOURCES)
+	vvp sim_build/verilog_tb.vvp
+
