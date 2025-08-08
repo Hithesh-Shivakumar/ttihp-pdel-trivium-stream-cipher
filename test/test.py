@@ -10,7 +10,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 
 # ─── EDITABLE SEED & PLAINTEXT ────────────────────────────────────────────
-SEED = 0xDE
+SEED = 0x23
 DATA = [0xDE, 0xAD, 0xBE, 0xEF]
 # ─────────────────────────────────────────────────────────────────────────
 
