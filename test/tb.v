@@ -59,7 +59,7 @@ module tb ();
     rst_n = 1;
 
     // === SEED INPUT ===
-    uio_in = 8'h76;  // Custom seed
+    uio_in = 8'h23;  // Custom seed
     #20;
     uio_in = 8'h00;  // Clear
     #20;
@@ -80,7 +80,7 @@ module tb ();
     #40;
 
     // === SAME SEED RE-INPUT ===
-    uio_in = 8'h76;
+    uio_in = 8'h23;
     #20;
     uio_in = 8'h00;
     #20;
