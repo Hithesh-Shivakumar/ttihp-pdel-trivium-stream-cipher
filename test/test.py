@@ -7,7 +7,7 @@ from cocotb.triggers import RisingEdge
 
 # ──────── EDIT THIS ────────
 SEED = 0xBB            # any 8-bit value you choose
-DATA = [0xDE, 0xAD, 0xBE, 0xEF]
+DATA = [0x35, 0xAD, 0xBE, 0xEF]
 # ───────────────────────────
 
 CMD_NORMAL = 0x00
