@@ -81,7 +81,7 @@ Due to the symmetric nature of, applying the same seed followed by the same enco
 
 ### How to test
 
-You can test this design either using a Verilog testbench or via a Cocotb Python-based test. See: [How to test](../test/README.MD)
+You can test this design either using a Verilog testbench or via a Cocotb Python-based test. See: README.md in test folder.
 
 All inputs/outputs are internal to the digital logic and tested in simulation. The design is fully self-contained and does not require external PMODs, displays, or peripherals. 
 
