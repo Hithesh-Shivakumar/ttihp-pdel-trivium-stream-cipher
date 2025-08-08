@@ -10,6 +10,8 @@ See below to get started or for more information, check the [website](https://ti
 
 ## How to run
 
+Do not use key as FF (1111_1111) as this is used to reset the LFSR
+
 To run the RTL simulation:
 
 ```sh
